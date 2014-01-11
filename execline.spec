@@ -3,12 +3,12 @@
 # - check/cleanup/handle "/command/" paths
 Summary:	A non-interactive scripting language similar to SH
 Name:		execline
-Version:	1.2.3
+Version:	1.2.4
 Release:	1
 License:	ISC
 Group:		Libraries
 Source0:	http://www.skarnet.org/software/execline/%{name}-%{version}.tar.gz
-# Source0-md5:	4593522ca4362223c9a0e116c5dbfe93
+# Source0-md5:	b29630e01c44f8a5279afb0039910ee9
 URL:		http://www.skarnet.org/software/execline/
 BuildRequires:	sed >= 4.0
 BuildRequires:	skalibs-devel >= 1.4.1
