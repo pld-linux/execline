@@ -1,17 +1,22 @@
 # TODO
 # - split -libs?
 # - check/cleanup/handle "/command/" paths
+#
+# Conditional build:
+%bcond_without	static_libs	# don't build static libraries
+
 Summary:	A non-interactive scripting language similar to SH
 Name:		execline
-Version:	1.2.4
-Release:	1
+Version:	2.1.5.0
+Release:	0.1
 License:	ISC
 Group:		Libraries
 Source0:	http://www.skarnet.org/software/execline/%{name}-%{version}.tar.gz
-# Source0-md5:	b29630e01c44f8a5279afb0039910ee9
+# Source0-md5:	cc3271375b89a0e3e4ed7e4b659fefe4
 URL:		http://www.skarnet.org/software/execline/
+BuildRequires:	make >= 4.0
 BuildRequires:	sed >= 4.0
-BuildRequires:	skalibs-devel >= 1.4.1
+BuildRequires:	skalibs-devel >= 2.3.10.0
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 # FIXME. temporarily disable. fix this later
@@ -39,12 +44,27 @@ Requires:	%{name} = %{version}-%{release}
 Header files for %{name} library.
 
 %prep
-%setup -qc
-mv admin/%{name}-%{version}/* .
+%setup -q
 
-%{__sed} -i -e '1 s,#!/command/execlineb,%{_bindir}/execlineb,' etc/*
+sed -i "s~tryldflag LDFLAGS_AUTO -Wl,--hash-style=both~:~" configure
 
 %build
+%configure \
+	--enable-shared \
+	--disable-static \
+	--disable-allstatic \
+	--bindir=%{_bindir} \
+	--sbindir=%{_sbindir} \
+	--dynlibdir=%{_libdir} \
+	--libdir=%{_libdir} \
+	--datadir=%{_sysconfdir} \
+	--sysdepdir=%{_libdir}/skalibs \
+	--dynlibdir=%{_libdir} \
+	--with-lib=%{_libdir}/skalibs \
+	--with-sysdeps=%{_libdir}/skalibs \
+	%{nil}
+
+%if 0
 echo "%{__cc} %{rpmcflags} -Wall" > conf-compile/conf-cc
 echo "%{__cc} %{rpmldflags}" > conf-compile/conf-dynld
 echo %{_libdir}/%{name} > conf-compile/conf-install-library
@@ -57,11 +77,23 @@ echo %{_libdir}/skalibs/sysdeps > conf-compile/import
 echo %{_includedir}/skalibs > conf-compile/path-include
 echo %{_libdir} > conf-compile/path-library
 echo %{_libdir} > conf-compile/path-library.so
+%endif
 
 %{__make}
 
 %install
 rm -rf $RPM_BUILD_ROOT
+%{__make} install \
+	DESTDIR=$RPM_BUILD_ROOT
+
+# SONAME: libexecline.so.2.1
+# so this is junk
+%{__rm} $RPM_BUILD_ROOT%{_libdir}/libexecline.so.2.1.5
+
+# file %{_bindir}/import from install of execline-2.1.5.0-0.1.x86_64 conflicts with file from package ImageMagick-6.9.5.2-1.x86_64
+%{__rm} $RPM_BUILD_ROOT%{_bindir}/import
+
+%if 0
 install -d $RPM_BUILD_ROOT{%{_sysconfdir},%{_libdir},%{_bindir},%{_includedir}/%{name}}
 install -p command/* $RPM_BUILD_ROOT%{_bindir}
 cp -a library.so/*  $RPM_BUILD_ROOT%{_libdir}
@@ -73,6 +105,7 @@ cp -p library/* $RPM_BUILD_ROOT%{_libdir}
 %endif
 
 %{__rm} $RPM_BUILD_ROOT%{_libdir}/libexecline.so.1.2
+%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -83,8 +116,10 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(644,root,root,755)
 %doc doc/*
+%if 0
 %config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/execline-shell
 %config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/execline-startup
+%endif
 %attr(755,root,root) %{_bindir}/background
 %attr(755,root,root) %{_bindir}/backtick
 %attr(755,root,root) %{_bindir}/cd
@@ -95,7 +130,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/elglob
 %attr(755,root,root) %{_bindir}/emptyenv
 %attr(755,root,root) %{_bindir}/exec
-%attr(755,root,root) %{_bindir}/execline
+#%attr(755,root,root) %{_bindir}/execline
 %attr(755,root,root) %{_bindir}/execlineb
 %attr(755,root,root) %{_bindir}/exit
 %attr(755,root,root) %{_bindir}/export
@@ -103,11 +138,14 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/fdclose
 %attr(755,root,root) %{_bindir}/fdmove
 %attr(755,root,root) %{_bindir}/fdreserve
-%attr(755,root,root) %{_bindir}/for
-%attr(755,root,root) %{_bindir}/forbacktick
+%attr(755,root,root) %{_bindir}/fdswap
+#%attr(755,root,root) %{_bindir}/for
+#%attr(755,root,root) %{_bindir}/forbacktick
 %attr(755,root,root) %{_bindir}/forbacktickx
 %attr(755,root,root) %{_bindir}/foreground
+%attr(755,root,root) %{_bindir}/forstdin
 %attr(755,root,root) %{_bindir}/forx
+%attr(755,root,root) %{_bindir}/getcwd
 %attr(755,root,root) %{_bindir}/getpid
 %attr(755,root,root) %{_bindir}/heredoc
 %attr(755,root,root) %{_bindir}/homeof
@@ -115,9 +153,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/ifelse
 %attr(755,root,root) %{_bindir}/ifte
 %attr(755,root,root) %{_bindir}/ifthenelse
-%attr(755,root,root) %{_bindir}/import
+#%attr(755,root,root) %{_bindir}/import
 %attr(755,root,root) %{_bindir}/importas
-%attr(755,root,root) %{_bindir}/loopwhile
+#%attr(755,root,root) %{_bindir}/loopwhile
 %attr(755,root,root) %{_bindir}/loopwhilex
 %attr(755,root,root) %{_bindir}/multidefine
 %attr(755,root,root) %{_bindir}/multisubstitute
@@ -126,15 +164,18 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/redirfd
 %attr(755,root,root) %{_bindir}/runblock
 %attr(755,root,root) %{_bindir}/shift
+%attr(755,root,root) %{_bindir}/trap
 %attr(755,root,root) %{_bindir}/tryexec
 %attr(755,root,root) %{_bindir}/umask
 %attr(755,root,root) %{_bindir}/unexport
 %attr(755,root,root) %{_bindir}/wait
-%attr(755,root,root) %{_libdir}/libexecline.so.*.*.*
-%ghost %{_libdir}/libexecline.so.1
+%attr(755,root,root) %{_bindir}/withstdinas
+
+# -libs
+%attr(755,root,root) %{_libdir}/libexecline.so.*.*.*.*
+%ghost %{_libdir}/libexecline.so.2.1
 
 %files devel
 %defattr(644,root,root,755)
-%{_includedir}/execline-config.h
-%{_includedir}/execline.h
+%{_includedir}/execline
 %{_libdir}/libexecline.so
